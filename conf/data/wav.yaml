@@ -1,5 +1,6 @@
 root_dir: data
 processed_dir: data/processed
+source: wav
 
 split:
   train_size: null
