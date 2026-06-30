@@ -1,0 +1,4 @@
+defaults:
+  - data: wav
+  - _self_
+

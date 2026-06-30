@@ -1,0 +1,32 @@
+defaults:
+  - data: wav
+  - model: f0
+  - modules@pipeline: f0
+  - logger: tensorboard
+  - trainer: default
+  - _self_
+
+seed: 1234
+log_dir: logs/lightning
+experiment_tag: crepe-dev
+
+data:
+  split:
+    train_size: 1
+    test_size: 1
+    val_size: 1
+  dataset:
+    sample_duration: 1.0
+  loader:
+    batch_size: 1
+    num_workers: 0
+    pin_memory: false
+
+trainer:
+  max_epochs: 1
+  limit_train_batches: 2
+  limit_val_batches: 1
+  num_sanity_val_steps: 0
+  enable_checkpointing: false
+  logger: false
+  callbacks: null

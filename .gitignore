@@ -317,4 +317,6 @@ pip-selfcheck.json
 
 data/*
 logs/*
+lightning_logs/*
 results/*
+outputs

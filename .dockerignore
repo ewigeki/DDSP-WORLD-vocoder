@@ -1,0 +1,13 @@
+.git
+.idea
+.venv
+__pycache__
+*.py[cod]
+
+data
+lightning_logs
+logs
+outputs
+
+.pytest_cache
+.mypy_cache

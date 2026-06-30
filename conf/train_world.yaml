@@ -1,0 +1,11 @@
+defaults:
+  - data: wav
+  - model: world
+  - modules@pipeline: world
+  - logger: tensorboard
+  - trainer: default
+  - _self_
+
+seed: null
+log_dir: logs/world
+experiment_tag: world-vocoder

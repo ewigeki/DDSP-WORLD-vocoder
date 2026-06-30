@@ -1,0 +1,26 @@
+f0_checkpoint_path: null
+
+f0_predictor:
+  cent_predictor:
+    _target_: src.models.crepe.Crepe
+    n_cents: 360
+
+encoder:
+  _target_: src.models.encoder.ZEncoder
+  sample_rate: 16000
+  n_fft: 2048
+  win_length: 2048
+  hop_length: 512
+  z_dim: 8
+
+decoder:
+  _target_: src.models.decoder.EmformerDecoder
+  z_dim: 8
+
+vocoder:
+  _target_: src.models.vocoder.WORLDVocoder
+  sample_rate: 16000
+  n_fft: 256
+  window_size: 256
+  hop_length: 64
+  audio_length_seconds: 4.0
