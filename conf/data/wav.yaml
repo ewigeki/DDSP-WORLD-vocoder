@@ -1,6 +1,7 @@
 root_dir: data
 
 split:
+  train_size: null
   test_size: 3
   val_size: 3
 

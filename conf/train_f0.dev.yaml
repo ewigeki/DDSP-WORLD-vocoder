@@ -1,0 +1,29 @@
+defaults:
+  - data: wav
+  - model: f0
+  - pipeline: f0
+  - trainer: default
+  - _self_
+
+seed: 1234
+
+data:
+  split:
+    train_size: 1
+    test_size: 1
+    val_size: 1
+  dataset:
+    sample_duration: 1.0
+  loader:
+    batch_size: 1
+    num_workers: 0
+    pin_memory: false
+
+trainer:
+  max_epochs: 1
+  limit_train_batches: 2
+  limit_val_batches: 1
+  num_sanity_val_steps: 0
+  enable_checkpointing: false
+  logger: false
+  callbacks: null

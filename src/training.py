@@ -20,15 +20,18 @@ def build_wav_dataloaders(cfg: DictConfig) -> tuple[DataLoader, DataLoader, Data
     split_cfg = cfg.get("split", {})
     val_size = int(split_cfg.get("val_size", 3))
     test_size = int(split_cfg.get("test_size", 3))
+    train_size = split_cfg.get("train_size")
 
     test_paths = wav_paths[:test_size]
     val_paths = wav_paths[test_size:test_size + val_size]
     train_paths = wav_paths[test_size + val_size:]
+    if train_size is not None:
+        train_paths = train_paths[:int(train_size)]
 
     if not train_paths:
         raise ValueError(
             "No training WAV files remain after applying "
-            f"test_size={test_size} and val_size={val_size}"
+            f"test_size={test_size}, val_size={val_size}, and train_size={train_size}"
         )
 
     dataset_kwargs = _as_container(cfg.get("dataset", {}))

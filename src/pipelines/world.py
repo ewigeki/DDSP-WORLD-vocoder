@@ -1,19 +1,8 @@
-from pathlib import Path
-
 import lightning as L
-import pandas as pd
 import torch
 import torch.nn.functional as F
-from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
-from torch.utils.data import DataLoader
+from torch import optim
 
-from src.data.source import WavDataset
-from src.models.crepe import Crepe
-from src.models.decoder import EmformerDecoder
-from src.models.encoder import ZEncoder
-from src.models.vocoder import WORLDVocoder
-from src.pipelines.f0 import F0Pipeline
-from src.utils import find_wav_files
 from src.visualization import AudioVisualizationLogger
 
 
@@ -175,26 +164,15 @@ class WORLD(L.LightningModule):
         loss, prediction = self._shared_step(batch, batch_idx)
         self.log("test/loss", loss)
 
+    def configure_optimizers(self):
+        optimizer = optim.AdamW(
+            [
+                *self.encoder.parameters(),
+                *self.decoder.parameters(),
+                *self.vocoder.parameters(),
+            ],
+            lr=2e-5,
+        )
 
-def inference_pipeline():
-    cent_predictor = Crepe()
-    device = torch.device("cuda")
-    model = F0Pipeline.load_from_checkpoint(CHECKPOINT_PATH, device, weights_only=True, cent_predictor=cent_predictor)
-    y, sr = librosa.load(SAMPLE_AUDIO_FILE, sr=16000)
-    y = torch.tensor(y).reshape(1, -1)
-    print(y[:, 480000:480000+64000])
-    f0 = model(y[:, 480000:480000+64000].to(device))
-    print(f0[0, :30])
-    f0 = model(y[:, 480000:480000 + 16384].to(device))
-    print(f0[0, :30])
-    f0 = model(F.pad(y[:, 480000:480000 + 16384], (0, 64000-16384)).to(device))
-    print(f0[0, :30])
-    f0 = model(y[:, 480000:480000 + 8192].to(device))
-    print(f0[0, :30])
-    f0 = model(y[:, 480000:480000 + 4096].to(device))
-    print(f0[0, :30])
-
-
-if __name__ == "__main__":
-    train_pipeline()
+        return optimizer
 
