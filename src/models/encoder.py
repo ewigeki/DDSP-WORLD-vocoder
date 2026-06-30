@@ -10,7 +10,7 @@ class ZEncoder(nn.Module):
     https://arxiv.org/pdf/2001.04643
     """
 
-    def __init__(self, sample_rate: int, n_fft: int, win_length: int, hop_length: int, z_dim: int = 8, n_time_samples: int = 125):
+    def __init__(self, sample_rate: int, n_fft: int, win_length: int, hop_length: int, z_dim: int = 16, n_time_samples: int = 125):
         super(ZEncoder, self).__init__()
 
         self.mel_transform = transforms.MelSpectrogram(sample_rate,

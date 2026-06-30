@@ -5,9 +5,9 @@ import torch.nn.functional as F
 from torch import nn
 
 
-class WORLD(nn.Module):
+class WORLDVocoder(nn.Module):
     def __init__(self, sample_rate: int, n_fft: int, window_size: int, hop_length: int, min_f0_hz: int = 71, audio_length_seconds: float = 4):
-        super(WORLD, self).__init__()
+        super(WORLDVocoder, self).__init__()
 
         self.sample_rate = sample_rate
         self.n_fft = n_fft
