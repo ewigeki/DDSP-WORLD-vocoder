@@ -11,6 +11,10 @@ def main(cfg: DictConfig) -> None:
 
 
 def preprocess_wav(cfg: DictConfig) -> None:
+    if cfg.data.get("source", "wav") == "precomputed":
+        print(f"Using precomputed data from {cfg.data.processed_dir}; skipping WAV preprocessing")
+        return
+
     wav_paths = find_wav_files(cfg.data.root_dir)
     if not wav_paths:
         raise ValueError(f"No WAV files found under data.root_dir={cfg.data.root_dir!r}")

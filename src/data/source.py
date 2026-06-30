@@ -17,6 +17,31 @@ import pyworld as pw
 WAV_CACHE_VERSION = 1
 
 
+class PrecomputedWavDataset(Dataset):
+    def __init__(
+            self,
+            cache_paths: List[str] | List[Path],
+    ):
+        self.cache_paths = cache_paths
+        self.cache = []
+
+        for cache_path in tqdm(cache_paths):
+            self.cache += self.load_samples(cache_path)
+
+    def __len__(self) -> int:
+        return len(self.cache)
+
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
+        return self.cache[idx]
+
+    def load_samples(self, cache_path: str | Path) -> list[Tuple[torch.Tensor, torch.Tensor]]:
+        payload = torch.load(cache_path, map_location="cpu", weights_only=False)
+        if not isinstance(payload, dict) or "samples" not in payload:
+            raise ValueError(f"Invalid precomputed WAV cache file: {cache_path}")
+
+        return payload["samples"]
+
+
 class WavDataset(Dataset):
     def __init__(
             self,
