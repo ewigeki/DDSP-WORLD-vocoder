@@ -5,6 +5,9 @@ from omegaconf import DictConfig
 from src.pipelines.f0 import F0Pipeline
 from src.training import build_wav_dataloaders
 
+import matplotlib
+matplotlib.use("Agg", force=True)
+
 
 @hydra.main(version_base=None, config_path="../conf", config_name="train_world")
 def train_pipeline(cfg: DictConfig):

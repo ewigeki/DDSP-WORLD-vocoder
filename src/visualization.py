@@ -181,7 +181,7 @@ class AudioVisualizationLogger:
             xlabel: str = "Frame",
             ylabel: str = "Bin",
     ):
-        if not self._has_logger(pl_module):
+        if not self._has_tensorboard_logger(pl_module):
             return
 
         image = image.detach().cpu().squeeze()

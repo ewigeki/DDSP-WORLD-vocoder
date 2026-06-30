@@ -17,7 +17,7 @@ class WORLDVocoder(nn.Module):
         self.min_f0_hz = min_f0_hz
         self.audio_length_seconds = audio_length_seconds
 
-        self.K = int(math.ceil(self.sample_rate / (2 * self.min_f0)))
+        self.K = int(math.ceil(self.sample_rate / (2 * self.min_f0_hz)))
 
 
     def saw_impulse(self, f0: torch.Tensor, sample_rate: int, duration: float, K=155, f_min=71):
@@ -45,9 +45,9 @@ class WORLDVocoder(nn.Module):
         return e_h
 
 
-    def noise_filtering(self, e_n, sp, ap, n_fft=1024, hop_length=259, center=False, lenght=65536):
+    def noise_filtering(self, e_n, sp, ap, n_fft=1024, hop_length=256, center=True, length=65536):
         """
-        Filter harmonic component using spectral envelope and aperiodicity.
+        Filter noise component using spectral envelope and aperiodicity.
         e_h: Pulse train excitation signal.
         sp: Spectral envelope (magnitude).
         ap: Aperiodicity factor.
@@ -56,14 +56,14 @@ class WORLDVocoder(nn.Module):
         """
         window = torch.hann_window(n_fft).to(e_n.device)
         stft_n = torch.stft(e_n, n_fft=n_fft, hop_length=hop_length, window=window, center=center, return_complex=True)
-
+        stft_n = stft_n[..., :sp.size(-1)]
         filtered_n = ap * sp * stft_n
-        n = torch.istft(filtered_n, n_fft=n_fft, hop_length=hop_length, window=window, center=center, length=lenght)
+        n = torch.istft(filtered_n, n_fft=n_fft, hop_length=hop_length, window=window, center=center, length=length)
 
         return n
 
 
-    def harmonic_filtering(self, e_h, sp, ap, n_fft=1024, hop_length=259, center=False, lenght=65536):
+    def harmonic_filtering(self, e_h, sp, ap, n_fft=1024, hop_length=256, center=True, length=64000):
         """
         Filter harmonic component using spectral envelope and aperiodicity.
         e_h: Pulse train excitation signal.
@@ -74,22 +74,35 @@ class WORLDVocoder(nn.Module):
         """
         window = torch.hann_window(n_fft).to(e_h.device)
         stft_h = torch.stft(e_h, n_fft=n_fft, hop_length=hop_length, window=window, center=center, return_complex=True)
-
+        stft_h = stft_h[..., :sp.size(-1)]
         filtered_h = (1 - ap) * sp * stft_h
-        h = torch.istft(filtered_h, n_fft=n_fft, hop_length=hop_length, window=window, center=center, length=lenght)
+        h = torch.istft(filtered_h, n_fft=n_fft, hop_length=hop_length, window=window, center=center, length=length)
 
         return h
 
 
     def forward(self, f0_hz, sp, ap, c_h = 1.0, c_n = 1.0) -> torch.Tensor:
+        """
+
+        :param f0_hz: (B, T) or (B, 1, T)
+        :param sp:
+        :param ap:
+        :param c_h:
+        :param c_n:
+        :return:
+        """
+
         B = f0_hz.shape[0]
 
-        interpolated_f0 = F.interpolate(f0_hz.unsqueeze(1), int(self.sample_rate * self.audio_length_seconds), mode="linear", align_corners=True)
+        if f0_hz.dim() == 2:
+            f0_hz = f0_hz.unsqueeze(1)
+
+        interpolated_f0 = F.interpolate(f0_hz, int(self.sample_rate * self.audio_length_seconds), mode="linear", align_corners=False)
 
         e_h = 0.48 * self.saw_impulse(interpolated_f0, self.sample_rate, self.audio_length_seconds, self.K, self.min_f0_hz)
         e_n = 2 * torch.rand((B, int(self.sample_rate * self.audio_length_seconds))).to(sp.device) - 1
 
-        h = self.harmonic_filtering(e_h, sp, ap, n_fft=self.n_fft, hop_length=self.hop_length, lenght=int(self.sample_rate * self.audio_length_seconds), center=True)
-        n = self.noise_filtering(e_n, sp, ap, n_fft=self.n_fft, hop_length=self.hop_length, lenght=int(self.sample_rate * self.audio_length_seconds), center=True)
+        h = self.harmonic_filtering(e_h, sp, ap, n_fft=self.n_fft, hop_length=self.hop_length, length=int(self.sample_rate * self.audio_length_seconds), center=True)
+        n = self.noise_filtering(e_n, sp, ap, n_fft=self.n_fft, hop_length=self.hop_length, length=int(self.sample_rate * self.audio_length_seconds), center=True)
 
         return c_h * h + c_n * n

@@ -77,10 +77,12 @@ class WORLD(L.LightningModule):
             pred_mag = torch.abs(pred_stft)
 
             # Spectral convergence
+            diff = true_mag - pred_mag
+
             sc_loss = (
-                    torch.linalg.norm(true_mag - pred_mag, ord="fro")
-                    / (torch.linalg.norm(true_mag, ord="fro") + eps)
-            )
+                    torch.linalg.norm(diff, ord="fro", dim=(-2, -1))
+                    / (torch.linalg.norm(true_mag, ord="fro", dim=(-2, -1)) + eps)
+            ).mean()
 
             # Log magnitude loss
             log_mag_loss = F.l1_loss(
@@ -140,8 +142,9 @@ class WORLD(L.LightningModule):
         y, _ = batch
 
         z = self.encoder(y)
-        f0_predicted = self.f0_predictor(y).detach()
-        sp, ap = self.decoder(f0_predicted, z)
+        f0_predicted = self.f0_predictor(y).detach().unsqueeze(1)
+        f0_predicted = F.upsample(f0_predicted, size=1000, mode="linear", align_corners=False)
+        sp, ap = self.decoder(f0_predicted.permute(0, 2, 1), z.permute(0, 2, 1))
         y_p = self.vocoder(f0_predicted, sp, ap)
 
         loss = self._m_sftf_loss(y, y_p)
