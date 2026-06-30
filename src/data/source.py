@@ -1,6 +1,9 @@
 import math
+import os
+import json
+from hashlib import sha256
 from pathlib import Path
-from typing import Tuple, List
+from typing import Any, Tuple, List
 
 import librosa
 import torch
@@ -9,6 +12,9 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 import numpy as np
 import pyworld as pw
+
+
+WAV_CACHE_VERSION = 1
 
 
 class WavDataset(Dataset):
@@ -20,6 +26,10 @@ class WavDataset(Dataset):
             sample_duration: float = 4.0, # in seconds
             split_margin: float = 0.0, # in seconds
             overlap_ratio: float = 0.0,
+            cache_dir: str | Path | None = None,
+            load_cache: bool = True,
+            save_cache: bool = True,
+            rebuild_cache: bool = False,
     ):
         self.wav_paths = wav_paths
         self.sample_rate = sample_rate
@@ -27,18 +37,101 @@ class WavDataset(Dataset):
         self.sample_duration = sample_duration
         self.split_margin = split_margin
         self.overlap_ratio = overlap_ratio
+        self.cache_dir = Path(cache_dir) if cache_dir is not None else None
+        self.load_cache = load_cache
+        self.save_cache = save_cache
+        self.rebuild_cache = rebuild_cache
 
         self.cache = []
 
         for wav_path in tqdm(wav_paths):
-            features = self.collect_features(wav_path)
-            self.cache += list(self.split_features(*features))
+            self.cache += self.load_or_collect_samples(wav_path)
 
     def __len__(self) -> int:
         return len(self.cache)
 
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
         return self.cache[idx]
+
+    def load_or_collect_samples(self, wav_path: str | Path) -> list[Tuple[torch.Tensor, torch.Tensor]]:
+        cache_path = self.get_cache_path(wav_path)
+        metadata = self.get_cache_metadata(wav_path)
+
+        if cache_path is not None and self.load_cache and not self.rebuild_cache:
+            samples = self.load_samples_from_cache(cache_path, metadata)
+            if samples is not None:
+                return samples
+
+        features = self.collect_features(wav_path)
+        samples = [
+            (
+                torch.as_tensor(y, dtype=torch.float32),
+                torch.as_tensor(f0, dtype=torch.float32),
+            )
+            for y, f0 in self.split_features(*features)
+        ]
+
+        if cache_path is not None and self.save_cache:
+            self.save_samples_to_cache(cache_path, metadata, samples)
+
+        return samples
+
+    def get_cache_metadata(self, wav_path: str | Path) -> dict[str, Any]:
+        wav_path = Path(wav_path)
+        stat = wav_path.stat()
+        return {
+            "version": WAV_CACHE_VERSION,
+            "wav_path": str(wav_path.resolve()),
+            "wav_size": stat.st_size,
+            "wav_mtime_ns": stat.st_mtime_ns,
+            "sample_rate": self.sample_rate,
+            "frame_period": self.frame_period,
+            "sample_duration": self.sample_duration,
+            "split_margin": self.split_margin,
+            "overlap_ratio": self.overlap_ratio,
+        }
+
+    def get_cache_path(self, wav_path: str | Path) -> Path | None:
+        if self.cache_dir is None:
+            return None
+
+        metadata = self.get_cache_metadata(wav_path)
+        cache_key = json.dumps(metadata, sort_keys=True).encode("utf-8")
+        digest = sha256(cache_key).hexdigest()[:16]
+        stem = Path(wav_path).stem
+        return self.cache_dir / f"{stem}-{digest}.pt"
+
+    def load_samples_from_cache(
+            self,
+            cache_path: Path,
+            metadata: dict[str, Any],
+    ) -> list[Tuple[torch.Tensor, torch.Tensor]] | None:
+        if not cache_path.exists():
+            return None
+
+        try:
+            payload = torch.load(cache_path, map_location="cpu", weights_only=False)
+        except (EOFError, OSError, RuntimeError, ValueError):
+            return None
+
+        if not isinstance(payload, dict):
+            return None
+
+        if payload.get("metadata") != metadata:
+            return None
+
+        return payload["samples"]
+
+    def save_samples_to_cache(
+            self,
+            cache_path: Path,
+            metadata: dict[str, Any],
+            samples: list[Tuple[torch.Tensor, torch.Tensor]],
+    ) -> None:
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp_path = cache_path.with_suffix(f".{os.getpid()}.tmp")
+        torch.save({"metadata": metadata, "samples": samples}, tmp_path)
+        tmp_path.replace(cache_path)
 
     def collect_features(self, wav_path):
         y, sr = librosa.load(wav_path, sr=self.sample_rate)

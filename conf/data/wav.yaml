@@ -1,4 +1,5 @@
 root_dir: data
+processed_dir: data/processed
 
 split:
   train_size: null
@@ -11,6 +12,10 @@ dataset:
   sample_duration: 4.0
   split_margin: 0.0
   overlap_ratio: 0.0
+  cache_dir: ${data.processed_dir}
+  load_cache: true
+  save_cache: true
+  rebuild_cache: false
 
 loader:
   batch_size: 4
