@@ -5,7 +5,11 @@ from src.data.source import WavDataset
 from src.utils import find_wav_files
 
 
-@hydra.main(version_base=None, config_path="../conf", config_name="preprocess_wav")
+@hydra.main(version_base=None, config_path="../../conf", config_name="preprocess_wav")
+def main(cfg: DictConfig) -> None:
+    preprocess_wav(cfg)
+
+
 def preprocess_wav(cfg: DictConfig) -> None:
     wav_paths = find_wav_files(cfg.data.root_dir)
     if not wav_paths:
@@ -17,4 +21,4 @@ def preprocess_wav(cfg: DictConfig) -> None:
 
 
 if __name__ == "__main__":
-    preprocess_wav()
+    main()

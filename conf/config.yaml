@@ -1,7 +1,7 @@
 defaults:
   - data: wav
   - model: f0
-  - pipeline: f0
+  - modules@pipeline: f0
   - logger: tensorboard
   - trainer: default
   - _self_

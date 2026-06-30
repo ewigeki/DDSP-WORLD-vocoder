@@ -1,4 +1,4 @@
-f0_checkpoint_path: "/home/ewigeki/MyProjects/ewigeki/DDSP-WORLD-vocoder/lightning_logs/version_1/checkpoints/last.ckpt"
+f0_checkpoint_path: null
 
 f0_predictor:
   cent_predictor:

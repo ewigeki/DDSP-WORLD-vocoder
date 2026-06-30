@@ -1,0 +1,21 @@
+defaults:
+  - data: wav
+  - logger: tensorboard
+  - trainer: default
+  - model@train_f0.model: f0
+  - modules@train_f0.pipeline: f0
+  - model@train_world.model: world
+  - modules@train_world.pipeline: world
+  - _self_
+
+seed: null
+log_dir: logs/pipeline
+experiment_tag: full-pipeline
+
+stages:
+  from: 1
+  to: 3
+
+preprocess_wav: {}
+train_f0: {}
+train_world: {}
