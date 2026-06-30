@@ -43,8 +43,8 @@ class EmformerDecoder(nn.Module):
             nn.Linear(200, 80 + 16),
         )
 
-        self.ap_upsampler = nn.Upsample(size=515, mode='linear', align_corners=True)
-        self.M = torch.from_numpy(librosa.filters.mel(sr=16000, n_fft=515 * 2 - 1, n_mels=80))  # (n_mels, n_fft/2+1)
+        self.ap_upsampler = nn.Upsample(size=129, mode='linear', align_corners=False)
+        self.M = torch.from_numpy(librosa.filters.mel(sr=16000, n_fft=129 * 2 - 1, n_mels=80))  # (n_mels, n_fft/2+1)
         self.M_r = nn.Parameter(
             torch.clamp(
                 torch.linalg.pinv(self.M),

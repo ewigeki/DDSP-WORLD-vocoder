@@ -13,6 +13,13 @@ class ZEncoder(nn.Module):
     def __init__(self, sample_rate: int, n_fft: int, win_length: int, hop_length: int, z_dim: int = 16, n_time_samples: int = 125):
         super(ZEncoder, self).__init__()
 
+        self.sample_rate = sample_rate
+        self.n_fft = n_fft
+        self.win_length = win_length
+        self.hop_length = hop_length
+        self.z_dim = z_dim
+        self.n_time_samples = n_time_samples
+
         self.mel_transform = transforms.MelSpectrogram(sample_rate,
                                                        n_fft,
                                                        win_length,
@@ -53,8 +60,11 @@ class ZEncoder(nn.Module):
         :return: Shape(B, C, 1000)
         """
 
+        if x.dim() != 2:
+            raise ValueError("expected 2D input (got {}D input)".format(x.dim()))
+
         output = self.mel_transform(x)
-        output = output[:, None, :, :]
+        output = output[:, None, :, :self.n_time_samples]
         output = self.model(output)
         output = output.permute(0, 2, 1)
         output = self.dense(output)

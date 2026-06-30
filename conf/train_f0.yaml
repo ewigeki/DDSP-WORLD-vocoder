@@ -2,7 +2,10 @@ defaults:
   - data: wav
   - model: f0
   - pipeline: f0
+  - logger: tensorboard
   - trainer: default
   - _self_
 
 seed: null
+log_dir: logs/f0
+experiment_tag: crepe

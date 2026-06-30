@@ -1,5 +1,6 @@
 _target_: lightning.Trainer
 max_epochs: 1000
+logger: ${logger}
 callbacks:
   - _target_: lightning.pytorch.callbacks.ModelCheckpoint
     monitor: val/loss

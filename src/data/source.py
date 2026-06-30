@@ -112,11 +112,3 @@ class USTDataset(Dataset):
 
     def collect_features(self, path: str | Path):
         pass
-
-
-if __name__ == '__main__':
-    paths = [
-        '/home/ewigeki/MyProjects/ewigeki/DDSP-WORLD-vocoder/data/「波音リツ」歌声データベースVer2.0.2/DATABASE/sacrifice/sacrifice.musicxml',
-    ]
-
-    dataset = MusicXMLDataset(paths)

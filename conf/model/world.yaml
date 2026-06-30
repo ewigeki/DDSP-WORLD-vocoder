@@ -1,4 +1,4 @@
-f0_checkpoint_path: ""
+f0_checkpoint_path: "/home/ewigeki/MyProjects/ewigeki/DDSP-WORLD-vocoder/lightning_logs/version_1/checkpoints/last.ckpt"
 
 f0_predictor:
   cent_predictor:
@@ -8,9 +8,9 @@ f0_predictor:
 encoder:
   _target_: src.models.encoder.ZEncoder
   sample_rate: 16000
-  n_fft: 1024
-  win_length: 1024
-  hop_length: 256
+  n_fft: 2048
+  win_length: 2048
+  hop_length: 512
   z_dim: 8
 
 decoder:
@@ -20,7 +20,7 @@ decoder:
 vocoder:
   _target_: src.models.vocoder.WORLDVocoder
   sample_rate: 16000
-  n_fft: 1024
-  window_size: 1024
-  hop_length: 256
+  n_fft: 256
+  window_size: 256
+  hop_length: 64
   audio_length_seconds: 4.0
