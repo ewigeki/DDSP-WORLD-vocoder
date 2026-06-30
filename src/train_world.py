@@ -1,62 +1,34 @@
-# TODO: create separate interface file
+import hydra
+from hydra.utils import instantiate
+from omegaconf import DictConfig
 
-import lightning as L
-from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
-from torch.utils.data import DataLoader
-
-from src.data.source import WavDataset
-from src.models.decoder import EmformerDecoder
-from src.models.encoder import ZEncoder
-from src.models.vocoder import WORLDVocoder
 from src.pipelines.f0 import F0Pipeline
-from src.pipelines.world import WORLD
-from src.utils import find_wav_files
-
-DATASET_ROOT_DIR = ""
-F0_CHECKPOINT_PATH = ""
-CHECKPOINT_PATH = ""
-SAMPLE_AUDIO_FILE = ""
+from src.training import build_wav_dataloaders
 
 
-def train_pipeline():
-    encoder = ZEncoder(16000, 1024, 1024, 256, 8)
-    decoder = EmformerDecoder(z_dim=8)
-    f0_predictor = F0Pipeline.load_from_checkpoint(F0_CHECKPOINT_PATH)
-    vocoder = WORLDVocoder(16000, 1024, 1024, 256)
+@hydra.main(version_base=None, config_path="../conf", config_name="train_world")
+def train_pipeline(cfg: DictConfig):
+    train_dataloader, val_dataloader, _ = build_wav_dataloaders(cfg.data)
 
-    model = WORLD(
-        encoder,
-        decoder,
-        f0_predictor,
-        vocoder,
-        16000,
+    if not cfg.model.f0_checkpoint_path:
+        raise ValueError("Set model.f0_checkpoint_path to a trained F0 checkpoint before WORLD training")
+
+    f0_cent_predictor = instantiate(cfg.model.f0_predictor.cent_predictor)
+    f0_predictor = F0Pipeline.load_from_checkpoint(
+        cfg.model.f0_checkpoint_path,
+        cent_predictor=f0_cent_predictor,
     )
 
-    dataset = find_wav_files(DATASET_ROOT_DIR)
-    train_dataset = WavDataset(dataset[6:])
-    val_dataset = WavDataset(dataset[3:6])
-    test_dataset = WavDataset(dataset[:3])
-    train_dataloader = DataLoader(train_dataset, batch_size=4, shuffle=True, num_workers=12)
-    val_dataloader = DataLoader(val_dataset, batch_size=4, shuffle=True, num_workers=12)
-    test_dataloader = DataLoader(test_dataset, batch_size=4, shuffle=True, num_workers=12)
-
-    checkpoint_callback = ModelCheckpoint(
-        monitor="val/loss",
-        mode="min",
-        save_top_k=3,
-        save_last=True,
-        filename="{epoch:03d}-{val_loss:.4f}",
+    model = instantiate(
+        cfg.pipeline,
+        encoder=instantiate(cfg.model.encoder),
+        decoder=instantiate(cfg.model.decoder),
+        f0_predictor=f0_predictor,
+        vocoder=instantiate(cfg.model.vocoder),
     )
-
-    early_stop_callback = EarlyStopping(
-        monitor="val/loss",
-        mode="min",
-        patience=10,
-        min_delta=1e-4,
-    )
-
-    trainer = L.Trainer(
-        max_epochs=1000,
-        callbacks=[checkpoint_callback, early_stop_callback],
-    )
+    trainer = instantiate(cfg.trainer)
     trainer.fit(model, train_dataloader, val_dataloader)
+
+
+if __name__ == "__main__":
+    train_pipeline()

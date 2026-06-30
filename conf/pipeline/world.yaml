@@ -1,0 +1,2 @@
+_target_: src.pipelines.world.WORLD
+sample_rate: 16000

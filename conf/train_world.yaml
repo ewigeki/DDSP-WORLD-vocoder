@@ -1,0 +1,8 @@
+defaults:
+  - data: wav
+  - model: world
+  - pipeline: world
+  - trainer: default
+  - _self_
+
+seed: null

@@ -1,0 +1,17 @@
+root_dir: data
+
+split:
+  test_size: 3
+  val_size: 3
+
+dataset:
+  sample_rate: 16000
+  frame_period: 4.0
+  sample_duration: 4.0
+  split_margin: 0.0
+  overlap_ratio: 0.0
+
+loader:
+  batch_size: 4
+  num_workers: 12
+  pin_memory: true
