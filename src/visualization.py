@@ -22,6 +22,13 @@ class AudioVisualizationLogger:
     def _has_tensorboard_logger(pl_module: L.LightningModule) -> bool:
         return hasattr(pl_module.logger, "experiment")
 
+    @staticmethod
+    def _prepare_tensor_for_logging(tensor: torch.Tensor) -> torch.Tensor:
+        tensor = tensor.detach().cpu()
+        if tensor.is_floating_point():
+            tensor = tensor.float()
+        return tensor
+
     def _prepare_audio(self, audio: torch.Tensor) -> torch.Tensor:
         """
         Convert audio to [T] CPU tensor.
@@ -32,7 +39,7 @@ class AudioVisualizationLogger:
             [1, T]
             [T]
         """
-        audio = audio.detach().cpu()
+        audio = self._prepare_tensor_for_logging(audio)
 
         if audio.ndim == 3:
             audio = audio[0]  # [B, C, T] -> [C, T]
@@ -148,8 +155,8 @@ class AudioVisualizationLogger:
         if not self._has_tensorboard_logger(pl_module):
             return
 
-        f0 = f0[0].detach().cpu()
-        pred_f0 = pred_f0[0].detach().cpu()
+        f0 = self._prepare_tensor_for_logging(f0[0])
+        pred_f0 = self._prepare_tensor_for_logging(pred_f0[0])
 
         fig = plt.figure(figsize=(10, 4))
 
@@ -184,7 +191,7 @@ class AudioVisualizationLogger:
         if not self._has_tensorboard_logger(pl_module):
             return
 
-        image = image.detach().cpu().squeeze()
+        image = self._prepare_tensor_for_logging(image).squeeze()
 
         fig = plt.figure(figsize=(10, 4))
 
@@ -234,7 +241,7 @@ class AudioVisualizationLogger:
             )
 
         # [B, T, C] -> [C, T] for image
-        probs = torch.sigmoid(cent_pred_logits[0]).detach().cpu()
+        probs = self._prepare_tensor_for_logging(torch.sigmoid(cent_pred_logits[0]))
         probs = probs.transpose(0, 1)
 
         fig = plt.figure(figsize=(12, 5))
@@ -258,7 +265,7 @@ class AudioVisualizationLogger:
                     f"got {tuple(target.shape)}"
                 )
 
-            target_0 = target[0].detach().cpu()  # [T, C]
+            target_0 = self._prepare_tensor_for_logging(target[0])  # [T, C]
             target_bins = target_0.argmax(dim=-1)  # [T]
             frames = torch.arange(target_bins.shape[0])
 
