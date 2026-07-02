@@ -9,3 +9,4 @@ defaults:
 seed: null
 log_dir: logs/world
 experiment_tag: world-vocoder
+world_checkpoint_path: null
