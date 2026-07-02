@@ -1,5 +1,6 @@
 import hydra
 import lightning as L
+import torch
 from hydra.utils import instantiate
 from omegaconf import DictConfig
 
@@ -27,9 +28,16 @@ def _checkpoint_path(trainer) -> str | None:
     )
 
 
+def _load_world_weights(model, checkpoint_path: str) -> None:
+    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+    model.load_state_dict(checkpoint["state_dict"])
+
+
 def train_world(cfg: DictConfig, f0_checkpoint_path: str | None = None) -> str | None:
     if cfg.get("seed") is not None:
         L.seed_everything(cfg.seed, workers=True)
+
+    torch.set_float32_matmul_precision('medium')
 
     train_dataloader, val_dataloader, _ = build_wav_dataloaders(cfg.data)
 
@@ -51,6 +59,10 @@ def train_world(cfg: DictConfig, f0_checkpoint_path: str | None = None) -> str |
         vocoder=instantiate(cfg.model.vocoder),
     )
     trainer = instantiate(cfg.trainer)
+    world_checkpoint_path = cfg.get("world_checkpoint_path")
+    if world_checkpoint_path:
+        _load_world_weights(model, world_checkpoint_path)
+
     trainer.fit(model, train_dataloader, val_dataloader)
     return _checkpoint_path(trainer)
 

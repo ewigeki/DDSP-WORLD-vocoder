@@ -1,6 +1,7 @@
 _target_: lightning.Trainer
 max_epochs: 1000
 logger: ${logger}
+precision: 16-mixed
 callbacks:
   - _target_: lightning.pytorch.callbacks.ModelCheckpoint
     monitor: val/loss
@@ -11,5 +12,5 @@ callbacks:
   - _target_: lightning.pytorch.callbacks.EarlyStopping
     monitor: val/loss
     mode: min
-    patience: 10
+    patience: 50
     min_delta: 1.0e-4
