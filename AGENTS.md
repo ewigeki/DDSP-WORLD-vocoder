@@ -2,23 +2,25 @@
 
 ## Project Structure & Module Organization
 
-This repository is a Python DDSP/WORLD vocoder project. Core code lives in `src/`: model definitions are in `src/models/`, Lightning modules and signal-processing pipelines are in `src/pipelines/`, dataset and score readers are in `src/data/`, and Hydra configuration is in `src/conf/config.yaml`. Training entry points are `src/train_f0.py` and `src/train_world.py`; `src/cli.py` is a minimal Hydra config runner. Local datasets should stay under `data/`, while generated artifacts such as `lightning_logs/`, `outputs/`, and checkpoints should not be treated as source code.
+This repository is a Python DDSP/WORLD vocoder project. Core code lives in `src/`: model definitions are in `src/models/`, Lightning modules and signal-processing pipelines are in `src/modules/`, stage orchestration lives in `src/stages/`, dataset and score readers are in `src/data/`, and shared training helpers are in `src/training.py`. Hydra configuration is in top-level `conf/`, with full-pipeline settings in `conf/run.yaml` and individual stage configs such as `conf/train_f0.yaml`, `conf/train_world.yaml`, and `conf/preprocess_wav.yaml`. The full pipeline entry point is `src/run.py`; individual stage entry points are `src/stages/preprocess_wav.py`, `src/stages/train_f0.py`, and `src/stages/train_world.py`. Local datasets should stay under `data/`, while generated artifacts such as `lightning_logs/`, `logs/`, `outputs/`, and checkpoints should not be treated as source code.
 
 ## Build, Test, and Development Commands
 
 - `python -m venv .venv && source .venv/bin/activate`: create and activate a local environment.
 - `pip install -r requirements.txt`: install pinned Python dependencies, including PyTorch, Lightning, librosa, Hydra, and pyworld.
-- `python -m src.cli`: print the active Hydra configuration.
-- `python -m src.train_f0`: run the F0 training pipeline after setting `DATASET_ROOT_DIR` and related constants in the script.
-- `python -m src.train_world`: run WORLD training after configuring dataset and F0 checkpoint paths.
+- `python -m src.run`: run the configured pipeline stages from `conf/run.yaml`.
+- `python -m src.stages.preprocess_wav`: cache WAV features according to `conf/preprocess_wav.yaml`.
+- `python -m src.stages.train_f0`: run F0 training according to `conf/train_f0.yaml`.
+- `python -m src.stages.train_world`: run WORLD training according to `conf/train_world.yaml`; set `model.f0_checkpoint_path` unless the checkpoint is passed from the full pipeline.
+- `python -m src.run stages.from=2 stages.to=3`: run a subset of the full pipeline with Hydra overrides.
 
 ## Coding Style & Naming Conventions
 
-Use standard Python style with 4-space indentation, snake_case for functions and variables, and PascalCase for classes such as `WORLDVocoder` and `F0Pipeline`. Keep modules focused by domain: readers under `src/data/readers/`, neural network components under `src/models/`, and orchestration code under `src/pipelines/` or training scripts. Prefer `pathlib.Path` for filesystem paths, type hints for public helpers, and concise comments only where the signal-processing or model logic is non-obvious.
+Use standard Python style with 4-space indentation, snake_case for functions and variables, and PascalCase for classes such as `WORLDVocoder` and `F0Pipeline`. Keep modules focused by domain: readers under `src/data/readers/`, neural network components under `src/models/`, Lightning modules and signal-processing pipelines under `src/modules/`, and orchestration code under `src/stages/` or `src/run.py`. Prefer `pathlib.Path` for filesystem paths, type hints for public helpers, and concise comments only where the signal-processing or model logic is non-obvious.
 
 ## Testing Guidelines
 
-No test suite or test runner is currently configured. When adding tests, use `pytest`, place files under `tests/`, and name them `test_<module>.py`. Prioritize unit tests for readers, tensor shape contracts, and utility functions before adding slow training checks. For manual verification, run `python -m src.cli` and a short training smoke test on a tiny WAV subset.
+No test suite or test runner is currently configured. When adding tests, use `pytest`, place files under `tests/`, and name them `test_<module>.py`. Prioritize unit tests for readers, tensor shape contracts, config composition, and utility functions before adding slow training checks. For manual verification, run `python -m src.run stages.from=1 stages.to=1` against a tiny WAV subset, then a short F0 or WORLD training smoke test with small split and trainer overrides.
 
 ## Commit & Pull Request Guidelines
 
