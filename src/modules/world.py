@@ -171,7 +171,7 @@ class WORLD(L.LightningModule):
             for real_feature, fake_feature in zip(real_features, fake_features)
         ) / sum(len(features) for features in f_map_real)
 
-        return generator_loss, discriminator_loss, feature_matching_loss
+        return generator_loss, discriminator_loss, feature_matching_loss, real_loss, fake_loss
 
     def _visualize(
         self,
@@ -249,20 +249,30 @@ class WORLD(L.LightningModule):
 
         self.toggle_optimizer(discriminator_optimizer)
         discriminator_optimizer.zero_grad()
-        _, discriminator_loss, _ = self._adversarial_loss(y, y_p.detach())
+        _, discriminator_loss, _, real_loss, fake_loss = self._adversarial_loss(y, y_p.detach())
         self.manual_backward(discriminator_loss)
+        self.clip_gradients(
+            discriminator_optimizer,
+            gradient_clip_val=1.0,
+            gradient_clip_algorithm="norm",
+        )
         discriminator_optimizer.step()
         self.untoggle_optimizer(discriminator_optimizer)
 
         self.toggle_optimizer(generator_optimizer)
         generator_optimizer.zero_grad()
-        adversarial_loss, _, feature_matching_loss = self._adversarial_loss(y, y_p)
+        adversarial_loss, _, feature_matching_loss, _, _ = self._adversarial_loss(y, y_p)
         generator_loss = (
             reconstruction_loss
             + self.adversarial_loss_weight * adversarial_loss
             + self.feature_matching_loss_weight * feature_matching_loss
         )
         self.manual_backward(generator_loss)
+        self.clip_gradients(
+            generator_optimizer,
+            gradient_clip_val=1.0,
+            gradient_clip_algorithm="norm",
+        )
         generator_optimizer.step()
         self.untoggle_optimizer(generator_optimizer)
 
@@ -271,6 +281,8 @@ class WORLD(L.LightningModule):
         self.log("train/adversarial_loss", adversarial_loss)
         self.log("train/feature_matching_loss", feature_matching_loss)
         self.log("train/discriminator_loss", discriminator_loss)
+        self.log("train/D_loss_real", real_loss)
+        self.log("train/D_loss_fake", fake_loss)
         self.log("train/use_discriminator", 1.0)
 
     def validation_step(self, batch, batch_idx):
@@ -310,6 +322,7 @@ class WORLD(L.LightningModule):
                 *self.vocoder.parameters(),
             ],
             lr=self.generator_lr,
+            weight_decay=1e-6,
         )
 
         discriminator_optimizer = optim.AdamW(
