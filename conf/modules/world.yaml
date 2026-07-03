@@ -1,12 +1,12 @@
 _target_: src.modules.world.WORLD
 sample_rate: 16000
-adversarial_loss_weight: 0.5
-feature_matching_loss_weight: 1.0
+adversarial_loss_weight: 0.1
+feature_matching_loss_weight: 0.2
 discriminator_start_step: 5000
 stft_loss_configs:
-  - [64, 16, 64, 0.02]
-  - [128, 32, 128, 0.05]
-  - [256, 64, 256, 0.1]
-  - [512, 128, 512, 0.25]
-  - [1024, 256, 1024, 0.5]
-  - [2048, 512, 2048, 1.1]
+  - [64, 16, 64, 0.14]
+  - [128, 32, 128, 0.28]
+  - [256, 64, 256, 0.5]
+  - [512, 128, 512, 1.13]
+  - [1024, 256, 1024, 2.2]
+  - [2048, 512, 2048, 4.5]
