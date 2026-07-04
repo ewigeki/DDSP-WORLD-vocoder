@@ -8,6 +8,10 @@ from torchaudio.models import Emformer
 class EmformerDecoder(nn.Module):
     def __init__(self,
                  z_dim: int = 16,
+                 sample_rate: int = 16000,
+                 n_fft: int = 256,
+                 n_mels: int = 80,
+                 ap_bins: int = 16,
                  hidden_dim: int = 128,
                  num_heads: int = 4,
                  ffn_dim: int = 512,
@@ -22,7 +26,7 @@ class EmformerDecoder(nn.Module):
         self.prenet = nn.Sequential(
             nn.Linear(1 + z_dim, hidden_dim), # log f0 + z
             nn.Tanh(),
-            nn.Dropout(0.25),
+            nn.Dropout(0.1),
         )
 
         self.emformer = Emformer(
@@ -39,12 +43,15 @@ class EmformerDecoder(nn.Module):
         self.postnet = nn.Sequential(
             nn.Linear(hidden_dim, 200),
             nn.Tanh(),
-            nn.Dropout(0.25),
-            nn.Linear(200, 80 + 16),
+            nn.Dropout(0.1),
+            nn.Linear(200, n_mels + ap_bins),
         )
 
-        self.ap_upsampler = nn.Upsample(size=129, mode='linear', align_corners=False)
-        self.M = torch.from_numpy(librosa.filters.mel(sr=16000, n_fft=129 * 2 - 1, n_mels=80))  # (n_mels, n_fft/2+1)
+        self.n_mels = n_mels
+        self.ap_bins = ap_bins
+        self.freq_bins = n_fft // 2 + 1
+        self.ap_upsampler = nn.Upsample(size=self.freq_bins, mode='linear', align_corners=False)
+        self.M = torch.from_numpy(librosa.filters.mel(sr=sample_rate, n_fft=n_fft, n_mels=n_mels))
         self.M_r = nn.Parameter(
             torch.clamp(
                 torch.linalg.pinv(self.M),
@@ -71,8 +78,8 @@ class EmformerDecoder(nn.Module):
 
         output = self.postnet(output)
 
-        sp = output[:, :, :80]  # (B, T, F)
-        ap = output[:, :, 80:]  # (B, T, F)
+        sp = output[:, :, :self.n_mels]  # (B, T, F)
+        ap = output[:, :, self.n_mels:]  # (B, T, F)
 
         sp = torch.pow(10, sp)
         sp = sp @ self.M_r.T  # (B, T, F)

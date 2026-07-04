@@ -1,0 +1,12 @@
+defaults:
+  - data: wav_48k
+  - model: world_48k
+  - modules@pipeline: world_48k
+  - logger: tensorboard
+  - trainer: default
+  - _self_
+
+seed: null
+log_dir: logs/world_48k
+experiment_tag: world-vocoder-48k
+world_checkpoint_path: null
