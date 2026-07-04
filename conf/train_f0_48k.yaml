@@ -1,0 +1,11 @@
+defaults:
+  - data: wav_48k
+  - model: f0_48k
+  - modules@pipeline: f0_48k
+  - logger: tensorboard
+  - trainer: default
+  - _self_
+
+seed: null
+log_dir: logs/f0_48k
+experiment_tag: crepe-48k
