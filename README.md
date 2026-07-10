@@ -180,11 +180,10 @@ python -m src.stages.train_f0 --config-name train_f0.dev
 
 Planned work:
 
-* **[v0.0.5] Inference ~ add standalone inference code for loading trained local checkpoints and saving generated audio.**
+* **[v0.0.6] Inference ~ add standalone inference code for loading trained local checkpoints and saving generated audio.**
 * **Training guide ~ document practical tips for stable model training, dataset quality, F0 issues, validation checks, and common failure modes.**
 * **Parallel preprocessing ~ add multiprocessing support for faster WAV preprocessing on larger datasets.**
 * **Documentation ~ add a minimal end-to-end example from WAV files to trained checkpoint and generated audio.**
-* **Experiments ~ add notes from model ablations and training experiments.**
 
 Remote model download or model registry support is not planned for the first inference release. The initial inference version will focus on local checkpoints.
 
