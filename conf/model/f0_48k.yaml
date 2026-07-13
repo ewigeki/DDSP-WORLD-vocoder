@@ -1,0 +1,3 @@
+cent_predictor:
+  _target_: src.models.crepe.Crepe
+  n_cents: 360
